@@ -47,15 +47,15 @@ Probably if you does not have image of MySQL downloaded already, you gat error l
 If you get MySQL error, you must modify docker-compose.yml with 
 ```yml
 services:
-	mysql:  
-	    platform: linux/x86_64
-	    image: 'mysql:8.0'
-		...
+    mysql:  
+        platform: linux/x86_64
+        image: 'mysql:8.0'
+        ...
 ```
 or
 ```yml
 services:
-	db:
-	    image: 'mariadb:latest'
-	    ...
+     mysql:
+         image: 'mariadb:latest'
+         ...
 ```
