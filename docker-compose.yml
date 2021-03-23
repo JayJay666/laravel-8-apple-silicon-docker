@@ -1,0 +1,97 @@
+# For more information: https://laravel.com/docs/sail
+# Customized by Bc. Jakub Josef Forman
+# Tested on Apple Silicon M1 Mac Mini with Docker 3.3.0 (62029) & Docker M1 Preview
+version: '3'
+services:
+    laravel.test:
+        build:
+            context: ./vendor/laravel/sail/runtimes/8.0
+            dockerfile: Dockerfile
+            args:
+                WWWGROUP: '${WWWGROUP}'
+        image: sail-8.0/app
+        ports:
+            - '${APP_PORT:-80}:80'
+        environment:
+            WWWUSER: '${WWWUSER}'
+            LARAVEL_SAIL: 1
+        volumes:
+            - '.:/var/www/html'
+        networks:
+            - sail
+        depends_on:
+            - mysql
+            - redis
+            - selenium
+    mysql:
+        image: 'mysql:8.0'
+        ports:
+            - '${FORWARD_DB_PORT:-3306}:3306'
+        environment:
+            MYSQL_ROOT_PASSWORD: '${DB_PASSWORD}'
+            MYSQL_DATABASE: '${DB_DATABASE}'
+            MYSQL_USER: '${DB_USERNAME}'
+            MYSQL_PASSWORD: '${DB_PASSWORD}'
+            MYSQL_ALLOW_EMPTY_PASSWORD: 'yes'
+        volumes:
+            - 'sailmysql:/var/lib/mysql'
+        networks:
+            - sail
+        healthcheck:
+          test: ["CMD", "mysqladmin", "ping"]
+    # phpmyadmin
+    pma:
+        image: phpmyadmin/phpmyadmin
+        environment:
+        # https://docs.phpmyadmin.net/en/latest/setup.html#docker-environment-variables
+            PMA_HOST: mysql
+            PMA_PORT: 3306
+            MYSQL_ROOT_PASSWORD: "${DB_PASSWORD}"
+        networks:
+            - sail
+        ports:
+            - '${FORWARD_DB_PORT:-8080}:80'
+        links:
+            - mysql:mysql
+    redis:
+        image: 'redis:alpine'
+        ports:
+            - '${FORWARD_REDIS_PORT:-6379}:6379'
+        volumes:
+            - 'sailredis:/data'
+        networks:
+            - sail
+        healthcheck:
+          test: ["CMD", "redis-cli", "ping"]
+    # Bug on M1, on Apple Silicon must be commented
+#    meilisearch:
+#        image: 'getmeili/meilisearch:latest'
+#        ports:
+#            - '${FORWARD_MEILISEARCH_PORT:-7700}:7700'
+#        volumes:
+#            - 'sailmeilisearch:/data.ms'
+#        networks:
+#            - sail
+    mailhog:
+        image: 'mailhog/mailhog:latest'
+        ports:
+            - '${FORWARD_MAILHOG_PORT:-1025}:1025'
+            - '${FORWARD_MAILHOG_DASHBOARD_PORT:-8025}:8025'
+        networks:
+            - sail
+    selenium:
+       image: 'selenium/standalone-chrome'
+       volumes:
+            - '/dev/shm:/dev/shm'
+       networks:
+           - sail
+networks:
+    sail:
+        driver: bridge
+volumes:
+    sailmysql:
+        driver: local
+    sailredis:
+        driver: local
+#    sailmeilisearch: # Bug on M1, on Apple Silicon must be commented
+#        driver: local
